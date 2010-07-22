@@ -1,0 +1,244 @@
+diff -r -u /home/gloom/Projects/libssh2-nacl-new/release/original/libssh2-1.2.6/config.sub libssh2-1.2.6/config.sub
+--- original/libssh2-1.2.6/config.sub	2009-05-14 22:37:23.000000000 +0200
++++ libssh2-1.2.6/config.sub	2010-07-21 18:09:33.218698248 +0200
+@@ -275,6 +275,7 @@
+ 	| moxie \
+ 	| mt \
+ 	| msp430 \
++	| nacl \
+ 	| nios | nios2 \
+ 	| ns16k | ns32k \
+ 	| or32 \
+@@ -1214,6 +1215,10 @@
+ 	*-unknown)
+ 		# Make sure to match an already-canonicalized machine name.
+ 		;;
++	-nacl*)
++        	basic_machine=i686-pc
++        	os=-nacl
++        	;;
+ 	*)
+ 		echo Invalid configuration \`$1\': machine \`$basic_machine\' not recognized 1>&2
+ 		exit 1
+diff -r -u /home/gloom/Projects/libssh2-nacl-new/release/original/libssh2-1.2.6/src/libssh2_priv.h libssh2-1.2.6/src/libssh2_priv.h
+--- original/libssh2-1.2.6/src/libssh2_priv.h	2010-06-03 13:52:02.000000000 +0200
++++ libssh2-1.2.6/src/libssh2_priv.h	2010-07-21 18:09:33.218698248 +0200
+@@ -105,7 +105,7 @@
+ #endif
+ 
+ /* Provide iovec / writev on WIN32 platform. */
+-#ifdef WIN32
++//#ifdef WIN32
+ 
+ struct iovec {
+     size_t iov_len;
+@@ -116,14 +116,14 @@
+ 
+ static inline int writev(int sock, struct iovec *iov, int nvecs)
+ {
+-    DWORD ret;
+-    if (WSASend(sock, (LPWSABUF)iov, nvecs, &ret, 0, NULL, NULL) == 0) {
+-        return ret;
+-    }
++//    DWORD ret;
++//    if (WSASend(sock, (LPWSABUF)iov, nvecs, &ret, 0, NULL, NULL) == 0) {
++//        return ret;
++//    }
+     return -1;
+ }
+ 
+-#endif /* WIN32 */
++//#endif /* WIN32 */
+ 
+ 
+ #ifdef LIBSSH2_LIBGCRYPT
+@@ -1115,13 +1115,13 @@
+ #define SSH_MSG_CHANNEL_SUCCESS                     99
+ #define SSH_MSG_CHANNEL_FAILURE                     100
+ 
+-#if defined( WIN32 ) || defined( __VMS )
++//#if defined( WIN32 ) || defined( __VMS )
+ ssize_t _libssh2_recv(libssh2_socket_t socket, void *buffer, size_t length, int flags);
+ ssize_t _libssh2_send(libssh2_socket_t socket, const void *buffer, size_t length, int flags);
+-#else
+-#define _libssh2_recv(a,b,c,d) recv(a,b,c,d)
+-#define _libssh2_send(a,b,c,d) send(a,b,c,d)
+-#endif
++//#else
++//#define _libssh2_recv(a,b,c,d) recv(a,b,c,d)
++//#define _libssh2_send(a,b,c,d) send(a,b,c,d)
++//#endif
+ 
+ #define LIBSSH2_READ_TIMEOUT 60 /* generic timeout in seconds used when
+                                    waiting for more data to arrive */
+diff -r -u /home/gloom/Projects/libssh2-nacl-new/release/original/libssh2-1.2.6/src/misc.c libssh2-1.2.6/src/misc.c
+--- original/libssh2-1.2.6/src/misc.c	2010-06-03 13:52:02.000000000 +0200
++++ libssh2-1.2.6/src/misc.c	2010-07-21 21:19:27.446700465 +0200
+@@ -39,6 +39,9 @@
+ #include "libssh2_priv.h"
+ #include "misc.h"
+ 
++#include "libssh2_nacl.h"
++int lock_flag = 1;
++
+ #ifdef HAVE_UNISTD_H
+ #include <unistd.h>
+ #endif
+@@ -83,7 +86,7 @@
+ }
+ #endif
+ 
+-#ifndef _libssh2_recv
++//#ifndef _libssh2_recv
+ /* _libssh2_recv
+  *
+  * Wrapper around standard recv to allow WIN32 systems
+@@ -92,7 +95,12 @@
+ ssize_t
+ _libssh2_recv(libssh2_socket_t socket, void *buffer, size_t length, int flags)
+ {
+-    ssize_t rc = recv(socket, buffer, length, flags);
++    //ssize_t rc = recv(socket, buffer, length, flags);
++    ssize_t rc = lock_flag ? nacl_recv_lock(socket, buffer, length) : nacl_recv_non_lock(socket, buffer, length);
++    if (rc < 0) {
++      errno = EAGAIN;
++    }
++
+ #ifdef WIN32
+     if (rc < 0 )
+         errno = wsa2errno();
+@@ -104,9 +112,9 @@
+ #endif
+     return rc;
+ }
+-#endif /* _libssh2_recv */
++//#endif /* _libssh2_recv */
+ 
+-#ifndef _libssh2_send
++//#ifndef _libssh2_send
+ 
+ /* _libssh2_send
+  *
+@@ -116,7 +124,13 @@
+ ssize_t
+ _libssh2_send(libssh2_socket_t socket, const void *buffer, size_t length, int flags)
+ {
+-    ssize_t rc = send(socket, buffer, length, flags);
++    //ssize_t rc = send(socket, buffer, length, flags);
++
++  char* tosend;
++  size_t len = _libssh2_base64_encode(NULL, (char*) buffer, length, &tosend);
++  nacl_send(socket, tosend, len);
++
++#if 0
+ #ifdef WIN32
+     if (rc < 0 )
+         errno = wsa2errno();
+@@ -127,8 +141,11 @@
+     }
+ #endif
+     return rc;
++#else
++  return length;
++#endif
+ }
+-#endif /* _libssh2_recv */
++//#endif /* _libssh2_recv */
+ 
+ /* libssh2_ntohu32
+  */
+@@ -227,7 +244,8 @@
+     short v;
+     int i = 0, len = 0;
+ 
+-    *data = LIBSSH2_ALLOC(session, (3 * src_len / 4) + 1);
++    //*data = LIBSSH2_ALLOC(session, (3 * src_len / 4) + 1);
++    *data = (char*)malloc(3*src_len/4+1);
+     d = (unsigned char *) *data;
+     if (!d) {
+         return _libssh2_error(session, LIBSSH2_ERROR_ALLOC,
+@@ -258,7 +276,8 @@
+     if ((i % 4) == 1) {
+         /* Invalid -- We have a byte which belongs exclusively to a partial
+            octet */
+-        LIBSSH2_FREE(session, *data);
++        //LIBSSH2_FREE(session, *data);
++        free(*data);
+         return _libssh2_error(session, LIBSSH2_ERROR_INVAL,
+                               "Invalid data (byte belonging to partial octet)");
+     }
+@@ -295,7 +314,9 @@
+   if(0 == insize)
+     insize = strlen(indata);
+ 
+-  base64data = output = LIBSSH2_ALLOC(session, insize*4/3+4);
++//  base64data = output = LIBSSH2_ALLOC(session, insize*4/3+4);
++  base64data = output = (char*)malloc(insize*4/3+4);
++
+   if(NULL == output)
+     return 0;
+ 
+@@ -416,7 +437,7 @@
+     if (session->tracehandler) {
+         (session->tracehandler)(session, session->tracehandler_context, buffer, len + 1);
+     } else {
+-        write(2, buffer, len + 1);
++        //write(2, buffer, len + 1);
+     }
+ }
+ 
+@@ -579,5 +600,11 @@
+   return 0;
+ }
+ 
+-
+ #endif
++
++//TMP
++int base64_to_binary_data(char** data, unsigned int* datalen,
++                          const char* src, unsigned int src_len) {
++  return libssh2_base64_decode(NULL, data, datalen, src, src_len);
++}
++
+diff -r -u /home/gloom/Projects/libssh2-nacl-new/release/original/libssh2-1.2.6/src/session.c libssh2-1.2.6/src/session.c
+--- original/libssh2-1.2.6/src/session.c	2010-04-29 23:55:49.000000000 +0200
++++ libssh2-1.2.6/src/session.c	2010-07-21 21:45:49.094700563 +0200
+@@ -56,6 +56,8 @@
+ #include "session.h"
+ #include "channel.h"
+ 
++#include "libssh2_nacl.h"
++
+ /* libssh2_default_alloc
+  */
+ static
+@@ -551,6 +553,10 @@
+         dir = libssh2_session_block_directions(session);
+ 
+         {
++          // To build with NaCl use this func instead of select or poll
++          rc = nacl_wait_for_sock();
++
++#if 0
+ #ifdef HAVE_POLL
+             struct pollfd sockets[1];
+ 
+@@ -592,6 +598,8 @@
+             rc = select(session->socket_fd + 1, readfd, writefd, NULL,
+                         seconds_to_next ? &tv : NULL);
+ #endif
++
++#endif
+         }
+     }
+ 
+@@ -624,7 +632,7 @@
+ 
+         if (session->socket_prev_blockstate) {
+             /* If in blocking state chang to non-blocking */
+-            session_nonblock(session->socket_fd, 1);
++            // session_nonblock(session->socket_fd, 1);
+         }
+ 
+         session->startup_state = libssh2_NB_state_created;
+

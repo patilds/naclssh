@@ -1,0 +1,56 @@
+<html> 
+<head> 
+	<title>gloomy term</title> 
+ 
+<script type="text/javascript" src="main.js"> </script>
+
+<style type="text/css">
+tr {
+        font-family: courier,fixed,monospace;
+        font-size: 12px;
+}
+</style>
+ 
+</head> 
+
+<body id='body_'>
+  <div id="nacl_ssh_plugin_content"></div>
+  <script type="text/javascript">
+    contentDiv = document.getElementById('nacl_ssh_plugin_content');
+    if (window.location.hash == '#develop') {
+      // Load the develop version of the module.
+      contentDiv.innerHTML = '<embed name="nacl_module" '
+                             + 'id="ssh_plugin" '
+                             + 'width=0 height=0 '
+                             + 'type="pepper-application/ssh_plugin" />';
+    } else {
+      // Load the published .nexe.  This includes the 'nexes' attribute which
+      // shows how to load multi-architecture modules.  Each entry in the
+      // table is a key-value pair: the key is the runtime ('x86-32',
+      // 'x86-64', etc.); the value is a URL for the desired NaCl module.
+      var nexes = 'x86-32: ssh_plugin_x86_32.nexe';
+      contentDiv.innerHTML = '<embed name="nacl_module" '
+                             + 'id="ssh_plugin" '
+                             + 'width=0 height=0 '
+                          // + 'nexes="' + nexes + '" '
+                             + 'type="application/x-nacl-srpc" '
+                             + 'onload=moduleDidLoad() />';
+      // Note: this code is here to work around a bug in Chromium build
+      // #47357.  See also
+      // http://code.google.com/p/nativeclient/issues/detail?id=500
+      document.getElementById('ssh_plugin').nexes = nexes;
+    }
+  </script>
+
+
+Host:port: <input id=hostname type=text value=""> &nbsp;&nbsp;&nbsp; User: <input id=username type=text value="">  &nbsp;&nbsp;&nbsp;    Password: <input id=pwd type=password> &nbsp;&nbsp;&nbsp; <button id=startButton onclick='start()'>Start SSH session</button>
+
+
+<div id=terminal>
+  <table id=termTable border='0' cellSpacing='0' cellPadding='0'> 
+  </table>
+</div>
+<input id=inputbox type=text style="visibility:hidden" onfocus="setFocusToTerm();"/>
+<pre id=log></pre>
+</body> 
+</html>

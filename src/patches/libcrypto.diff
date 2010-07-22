@@ -1,0 +1,19 @@
+--- original/openssl-1.0.0a/e_os.h	2010-05-31 15:18:08.000000000 +0200
++++ openssl-1.0.0a/e_os.h	2010-07-21 11:26:32.623320612 +0200
+@@ -76,6 +76,8 @@
+ #define REF_PRINT(a,b)	fprintf(stderr,"%08X:%4d:%s\n",(int)b,b->references,a)
+ #endif
+ 
++// TMP: to build for Native Client which cannot access files
++#if 0
+ #ifndef DEVRANDOM
+ /* set this to a comma-separated list of 'random' device files to try out.
+  * My default, we will try to read at least one of these files */
+@@ -87,6 +89,7 @@
+  * listed in DEVRANDOM did not return enough entropy. */
+ #define DEVRANDOM_EGD "/var/run/egd-pool","/dev/egd-pool","/etc/egd-pool","/etc/entropy"
+ #endif
++#endif
+ 
+ #if defined(OPENSSL_SYS_VXWORKS)
+ #  define NO_SYS_PARAM_H
