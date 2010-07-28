@@ -242,23 +242,13 @@ function mouseClickHandler(i) {
   myAlert(str);
 }
 
-function start() {
-  var body = document.getElementById('body_');
-  body.onkeypress=function() { keyPressHandler(window.event.charCode);};
-  body.onkeydown=function() { keyDownHandler(window.event.keyCode); };
-
-  document.getElementById('startButton').style.visibility = 'hidden';
-
-  var host = document.getElementById('hostname').value;
-  var user = document.getElementById('username').value;
-  var pwd = document.getElementById('pwd').value;
-
+function startSSH(proxyURI, host, user, pwd) {
   initEscapeMap();
   initCharSetMap();
   initLineGraphicsMap();
 
   initTable();
-  loadData(host, user, pwd);
+  loadData(proxyURI, host, user, pwd);
 }
 
 function write(c) {
@@ -489,10 +479,12 @@ function myAlert1(msg) {
 }
 
 
+// proxyURI is like ws://hostname:port/echo
+// and points to websocket-to-socket proxy
+// like http://web2socket.googlecode.com
+function loadData(proxyURI, host, user, pwd) {
 
-function loadData(host, user, pwd) {
-
-  ws = new WebSocket("ws://127.0.0.1:10101/echo");
+  ws = new WebSocket(proxyURI);
 
   ws.onopen = function() {
     document.getElementById('ssh_plugin').sshconnect(user, pwd);
@@ -1019,4 +1011,18 @@ function setFocus(id) {
   elem.focus();
 }
 
+function loadNaClSSHClient(contentDiv, naclElementId, nexes) {
+  // Load the published .nexe.  This includes the 'nexes' attribute which
+  // shows how to load multi-architecture modules.  Each entry in the
+  // table is a key-value pair: the key is the runtime ('x86-32',
+  // 'x86-64', etc.); the value is a URL for the desired NaCl module.
+  contentDiv.innerHTML = '<embed id="' + naclElementId + '" '
+      + 'style="width:0;height:0" '
+      + 'type="application/x-nacl-srpc" '
+      + 'onload=moduleDidLoad() />';
+  // Note: this code is here to work around a bug in Chromium build
+  // #47357.  See also
+  // http://code.google.com/p/nativeclient/issues/detail?id=500
+  document.getElementById(naclElementId).nexes = nexes;
+}
 

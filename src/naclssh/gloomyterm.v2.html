@@ -10,39 +10,34 @@ tr {
         font-size: 12px;
 }
 </style>
- 
-</head> 
+<script type="text/javascript">
+function start() {
+  var body = document.getElementById('body_');
+  body.onkeypress=function() { keyPressHandler(window.event.charCode);};
+  body.onkeydown=function() { keyDownHandler(window.event.keyCode); };
+
+  document.getElementById('startButton').style.visibility = 'hidden';
+
+  var proxyHost = document.getElementById('proxyhost').value;
+  var proxyURI = "ws://" + proxyHost + ":10101/echo";
+  var host = document.getElementById('hostname').value;
+  var user = document.getElementById('username').value;
+  var pwd = document.getElementById('pwd').value;
+  startSSH(proxyURI, host, user, pwd);
+}
+</script>
+</head>
 
 <body id='body_'>
   <div id="nacl_ssh_plugin_content"></div>
   <script type="text/javascript">
-    contentDiv = document.getElementById('nacl_ssh_plugin_content');
-    if (window.location.hash == '#develop') {
-      // Load the develop version of the module.
-      contentDiv.innerHTML = '<embed name="nacl_module" '
-                             + 'id="ssh_plugin" '
-                             + 'width=0 height=0 '
-                             + 'type="pepper-application/ssh_plugin" />';
-    } else {
-      // Load the published .nexe.  This includes the 'nexes' attribute which
-      // shows how to load multi-architecture modules.  Each entry in the
-      // table is a key-value pair: the key is the runtime ('x86-32',
-      // 'x86-64', etc.); the value is a URL for the desired NaCl module.
-      var nexes = 'x86-32: ssh_plugin_x86_32.nexe';
-      contentDiv.innerHTML = '<embed name="nacl_module" '
-                             + 'id="ssh_plugin" '
-                             + 'width=0 height=0 '
-                          // + 'nexes="' + nexes + '" '
-                             + 'type="application/x-nacl-srpc" '
-                             + 'onload=moduleDidLoad() />';
-      // Note: this code is here to work around a bug in Chromium build
-      // #47357.  See also
-      // http://code.google.com/p/nativeclient/issues/detail?id=500
-      document.getElementById('ssh_plugin').nexes = nexes;
-    }
+    var contentDiv = document.getElementById('nacl_ssh_plugin_content');
+    loadNaClSSHClient(contentDiv,
+                      'ssh_plugin',
+                      'x86-32: ssh_plugin_x86_32.nexe?rnd=' + Math.random());
   </script>
 
-
+<input type="hidden" value="127.0.0.1" id="proxyhost" />
 Host:port: <input id=hostname type=text value=""> &nbsp;&nbsp;&nbsp; User: <input id=username type=text value="">  &nbsp;&nbsp;&nbsp;    Password: <input id=pwd type=password> &nbsp;&nbsp;&nbsp; <button id=startButton onclick='start()'>Start SSH session</button>
 
 
