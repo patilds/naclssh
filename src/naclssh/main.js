@@ -13,11 +13,13 @@ var screenBuffer = new Object();
 screenBuffer.chars = new Array(maxrow);
 screenBuffer.colors = new Array(maxrow);
 screenBuffer.bgrColors = new Array(maxrow);
+screenBuffer.tabs = new Array(maxcol);
 
 var alternateScreenBuffer = new Object();
 alternateScreenBuffer.chars = new Array(maxrow);
 alternateScreenBuffer.colors = new Array(maxrow);
 alternateScreenBuffer.bgrColors = new Array(maxrow);
+alternateScreenBuffer.tabs = new Array(maxcol);
 
 var activeScreenBuf = screenBuffer;
 
@@ -190,6 +192,8 @@ function initScreenBuf() {
       clearChar(i,j);
     }
   }
+
+  setDefaultTabs();
 }
 
 function initTable() {
@@ -286,7 +290,8 @@ function sendData(c) {
 function ris() {
   softReset();
   clearAll();
-  setCursorPos(1,1);
+  setCursorPos(1,1); 
+  setDefaultTabs();
 
   //TODO:
   // Sets the SGR state to normal.
@@ -1026,3 +1031,39 @@ function loadNaClSSHClient(contentDiv, naclElementId, nexes) {
   document.getElementById(naclElementId).nexes = nexes;
 }
 
+function tab() {
+  for (var i = cursorPos.col + 1; i < maxcol; ++i) {
+    if (activeScreenBuf.tabs[i]) {
+      cursorPos.col = i;
+      break;
+    }
+  }
+}
+
+function tabSet() {
+  activeScreenBuf.tabs[cursorPos.col] = true;
+}
+
+function tabClear(arg) {
+  switch (arg) {
+    case 0:
+      activeScreenBuf.tabs[cursorPos.col] = false;
+      break;
+
+    case 3:
+      clearAllTabs();
+      break;
+  }
+}
+
+function setDefaultTabs() {
+  for (var i = 0; i < maxcol; ++i) {
+    activeScreenBuf.tabs[i] = i % 8 == 0;
+  }
+}
+
+function clearAllTabs() {
+  for (var i = 0; i < maxcol; ++i) {
+    activeScreenBuf.tabs[i] = false;
+  }
+}

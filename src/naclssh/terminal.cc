@@ -96,7 +96,7 @@ pair<bool,int> ParseEscapeSequence(char* buffer, int length) {
 
 // 27  [  4  0  ;  2  3  H 
 string ParseArgs() {
-  static const string default0 = "JKblmh";
+  static const string default0 = "JKbglmh";
   static const string default1 = "ABCDGMLPXd@";
 
   ostringstream os;
@@ -214,8 +214,7 @@ void EscapeSequence(ostringstream& os) {
       if (es_buf[1] == '[') {
         os << "setCursorPos(" << ParseArgs() << ");";
       } else {
-        // TODO: else tabset
-        //fprintf(stderr, "!!Tabset");
+        os << "tabSet();";
       }
       break;
     case 'J':
@@ -258,6 +257,10 @@ void EscapeSequence(ostringstream& os) {
       break;
     case 'b':
       os << "repLast(" << ParseArgs() << ");";
+      break;
+
+    case 'g':
+      os << "tabClear(" << ParseArgs() << ");";
       break;
 
     case 'h':
@@ -468,6 +471,9 @@ void PrintToTerminal(char* buffer, int length) {
     } else if (code == 8) {
         FinishWriteToTerm(os, state);
         os << "backSpace();";
+    } else if (code == 9) {
+        FinishWriteToTerm(os, state);
+        os << "tab();";
     } else if (code == 13) {
         FinishWriteToTerm(os, state);
         os << "carriageReturn();";
