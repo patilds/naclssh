@@ -30,7 +30,7 @@ tar -xzf openssl-1.0.0a.tar.gz || die "tar openssl failed"
 patch -p1 < ../patches/libcrypto.diff || die "patch crypto failed"
 
 cd openssl-1.0.0a
-./config --cross-compile-prefix=$NACL_CC_PREFIX no-dso no-shared no-hw no-sse2 no-krb5 no-asm -I$DIR/naclstubs/include || die "config openssl failed"
+MACHINE=i686 ./config --cross-compile-prefix=$NACL_CC_PREFIX no-dso no-shared no-hw no-sse2 no-krb5 no-asm -I$DIR/naclstubs/include || die "config openssl failed"
 
 make build_crypto || die "make build_crypto failed"
 
