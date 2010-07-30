@@ -746,7 +746,7 @@ function writeCharToTerminal(c) {
       if (wrapMode) {
         cursorPos.col = 0;
         cursorPos.row++;
-       checkMaxRow();
+        checkMaxRow();
       } else {
         cursorPos.col = maxcol - 1;
       }
@@ -865,16 +865,24 @@ function deleteChar(n) {
 }
 
 function setCursorPos(r,c) {
-  cursorPos.row = r - 1;
-  cursorPos.col = c - 1;
+  setCursorRow(r);
+  setCursorCol(c);
 }
 
 function setCursorCol(c) {
-  cursorPos.col = c - 1;
+  if (c >= maxcol) {
+    cursorPos.col = maxcol - 1;
+  } else {
+    cursorPos.col = c - 1;
+  }
 }
 
 function setCursorRow(r) {
-  cursorPos.row = r - 1;
+  if (r >= maxrow) {
+    cursorPos.row = maxrow - 1;
+  } else {
+    cursorPos.row = r - 1;
+  }
 }
 
 
