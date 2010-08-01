@@ -55,6 +55,8 @@ var charSetMap = new Object();
 
 var lineGraphicsMap = new Object();
 
+var tabActive = true;
+
 var ws;
 
 //TODO: escape more symbols
@@ -600,10 +602,7 @@ function deleteLines(n) {
 
 //To draw cursor: swaps background and foreground colors
 function swapColors() {
-  var c = cursorPos.col;
-  if (cursorPos.col == maxcol) {
-    --c; 
-  }
+  var c = Math.min(cursorPos.col, maxcol - 1);
   var color = activeScreenBuf.colors[cursorPos.row][c];
   activeScreenBuf.colors[cursorPos.row][c] = activeScreenBuf.bgrColors[cursorPos.row][c];
   activeScreenBuf.bgrColors[cursorPos.row][c] = color;
@@ -1044,22 +1043,28 @@ function loadNaClSSHClient(contentDiv, naclElementId, nexes) {
 }
 
 function tab() {
-  for (var i = cursorPos.col + 1; i < maxcol; ++i) {
-    if (activeScreenBuf.tabs[i]) {
-      cursorPos.col = i;
-      break;
+  if (tabActive) {
+    for (; cursorPos.col < maxcol; ++cursorPos.col) {
+      if (activeScreenBuf.tabs[cursorPos.col]) {
+        break;
+      }
     }
   }
 }
 
 function tabSet() {
-  activeScreenBuf.tabs[cursorPos.col] = true;
+  if (cursorPos.col < maxcol) {
+    activeScreenBuf.tabs[cursorPos.col] = true;
+  }
+  tabActive = true;
 }
 
 function tabClear(arg) {
   switch (arg) {
     case 0:
-      activeScreenBuf.tabs[cursorPos.col] = false;
+      if (cursorPos.col < maxcol) {
+        activeScreenBuf.tabs[cursorPos.col] = false;
+      }
       break;
 
     case 3:
@@ -1072,10 +1077,13 @@ function setDefaultTabs() {
   for (var i = 0; i < maxcol; ++i) {
     activeScreenBuf.tabs[i] = i % 8 == 0;
   }
+  activeScreenBuf.tabs[maxcol - 1] = true;
+  tabActive = true;
 }
 
 function clearAllTabs() {
   for (var i = 0; i < maxcol; ++i) {
     activeScreenBuf.tabs[i] = false;
   }
+  tabActive = false;
 }
