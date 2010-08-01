@@ -600,9 +600,13 @@ function deleteLines(n) {
 
 //To draw cursor: swaps background and foreground colors
 function swapColors() {
-  var color = activeScreenBuf.colors[cursorPos.row][cursorPos.col];
-  activeScreenBuf.colors[cursorPos.row][cursorPos.col] = activeScreenBuf.bgrColors[cursorPos.row][cursorPos.col];
-  activeScreenBuf.bgrColors[cursorPos.row][cursorPos.col] = color;
+  var c = cursorPos.col;
+  if (cursorPos.col == maxcol) {
+    --c; 
+  }
+  var color = activeScreenBuf.colors[cursorPos.row][c];
+  activeScreenBuf.colors[cursorPos.row][c] = activeScreenBuf.bgrColors[cursorPos.row][c];
+  activeScreenBuf.bgrColors[cursorPos.row][c] = color;
 }
 
 //copy charsbuf to the table
@@ -740,8 +744,6 @@ function writeCharToTerminal(c) {
     }
 
     var c1 = escapeChar(c);
-    write(c1);
-    cursorPos.col++;
     if (cursorPos.col == maxcol) {
       if (wrapMode) {
         cursorPos.col = 0;
@@ -751,6 +753,8 @@ function writeCharToTerminal(c) {
         cursorPos.col = maxcol - 1;
       }
     }
+    write(c1);
+    cursorPos.col++;
   }
 }
 
