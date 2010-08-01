@@ -1044,7 +1044,7 @@ function loadNaClSSHClient(contentDiv, naclElementId, nexes) {
 
 function tab() {
   if (tabActive) {
-    for (; cursorPos.col < maxcol; ++cursorPos.col) {
+    for (; cursorPos.col < maxcol - 1; ++cursorPos.col) {
       if (activeScreenBuf.tabs[cursorPos.col]) {
         break;
       }
@@ -1077,7 +1077,6 @@ function setDefaultTabs() {
   for (var i = 0; i < maxcol; ++i) {
     activeScreenBuf.tabs[i] = i % 8 == 0;
   }
-  activeScreenBuf.tabs[maxcol - 1] = true;
   tabActive = true;
 }
 
