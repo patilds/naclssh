@@ -499,7 +499,15 @@ function loadData(proxyURI, host, user, pwd) {
   };
 
   ws.onmessage = function(msg) {
-    document.getElementById('ssh_plugin').savedata(msg.data);
+    // TODO: move to constants
+    var kNaclMaxChunk = 60 * 1024;
+    
+    for (var i = 0; i < msg.data.length; i += kNaclMaxChunk) {
+      var to = i + kNaclMaxChunk;
+      document.getElementById('ssh_plugin').savedata(msg.data.substring(i, to), i, msg.data.length);
+    }
+
+    //document.getElementById('ssh_plugin').savedata(msg.data);
   }
 
   ws.onclose = function() {

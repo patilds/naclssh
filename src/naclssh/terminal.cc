@@ -49,7 +49,7 @@ void AsyncSend(void* msg) {
 }
 
 
-void AddToBuf(const char* msg, unsigned int length) {
+void AddToRecvBuf(const char* msg, unsigned int length) {
   char* data;
   unsigned int datalen;
   base64_to_binary_data(&data, &datalen, msg, length);

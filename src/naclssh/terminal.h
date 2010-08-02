@@ -8,7 +8,7 @@
 #include <utility>
 
 void AsyncSend(void* msg);
-void AddToBuf(const char* msg, unsigned int length);
+void AddToRecvBuf(const char* msg, unsigned int length);
 void CallJS(const std::ostringstream& os);
 std::pair<bool,int> ParseEscapeSequence(char* buffer, int length);
 std::string ParseArgs();
