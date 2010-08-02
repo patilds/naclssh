@@ -57,6 +57,9 @@ var lineGraphicsMap = new Object();
 
 var tabActive = true;
 
+// keep synchronized with kNaClChunkSize in ssh_plugin.cc
+var NACL_CHUNK_SIZE = 60 * 1024;
+
 var ws;
 
 //TODO: escape more symbols
@@ -499,15 +502,10 @@ function loadData(proxyURI, host, user, pwd) {
   };
 
   ws.onmessage = function(msg) {
-    // TODO: move to constants
-    var kNaclMaxChunk = 60 * 1024;
-    
-    for (var i = 0; i < msg.data.length; i += kNaclMaxChunk) {
-      var to = i + kNaclMaxChunk;
-      document.getElementById('ssh_plugin').savedata(msg.data.substring(i, to), i, msg.data.length);
+    for (var i = 0; i < msg.data.length; i += NACL_CHUNK_SIZE) {
+      document.getElementById('ssh_plugin').savedata(
+          msg.data.length <= NACL_CHUNK_SIZE ? msg.data : msg.data.substring(i, i + NACL_CHUNK_SIZE), i, msg.data.length);
     }
-
-    //document.getElementById('ssh_plugin').savedata(msg.data);
   }
 
   ws.onclose = function() {

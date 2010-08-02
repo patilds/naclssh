@@ -29,8 +29,6 @@ using std::vector;
 extern queue<char> recv_buf;
 extern queue<unsigned char> term_buf;
 
-vector<char> interm_recv_buf;
-
 extern struct NppGate *npp_gate;
 
 // These are the method names as JavaScript sees them.
@@ -50,20 +48,28 @@ unsigned char random_datasource[] = "La1fk&E8nsjoQ3k!sTg69#d2hoqhz)90yagE3t5d(fS
 const unsigned int kNaClChunkSize = 60 * 1024;
 
 static bool SaveData(NPVariant *result, const NPVariant *args) {
+  static vector<char> interm_recv_buf;
+
   NPString str = NPVARIANT_TO_STRING(args[0]);
   unsigned int start = NPVARIANT_TO_INT32(args[1]);
+  unsigned int length = NPVARIANT_TO_INT32(args[2]);
 
-  if (!start) {
-    // first message chunk
-    interm_recv_buf.resize(NPVARIANT_TO_INT32(args[2]));
-  }
+  if (length < kNaClChunkSize) {
+    // short message - no intermediate buf
+    AddToRecvBuf(str.UTF8Characters, str.UTF8Length);
+  } else {
+    if (!start) {
+      // first message chunk
+      interm_recv_buf.resize(length);
+    }
 
-  memcpy(&interm_recv_buf[start], str.UTF8Characters, str.UTF8Length);
+    memcpy(&interm_recv_buf[start], str.UTF8Characters, str.UTF8Length);
 
-  if (start + kNaClChunkSize >= interm_recv_buf.size()) {
-    // last message chunk
-    AddToRecvBuf(&interm_recv_buf[0], interm_recv_buf.size());
-    interm_recv_buf.clear();
+    if (start + kNaClChunkSize >= interm_recv_buf.size()) {
+      // last message chunk
+      AddToRecvBuf(&interm_recv_buf[0], interm_recv_buf.size());
+      interm_recv_buf.clear();
+    }
   }
 
   if (result) {
