@@ -34,6 +34,8 @@ extern pthread_mutex_t mutexbuf;
 extern pthread_cond_t mutexbuf_cvar;
 extern struct NppGate *npp_gate;
 
+void PrintBuffer(char*, int);
+
 void AsyncSend(void* msg) {
   NPString npstr;
   npstr.UTF8Characters = (char*)msg;
@@ -43,7 +45,10 @@ void AsyncSend(void* msg) {
   NPN_GetValue(npp_gate->npp, NPNVWindowNPObject, &window_object);
 
   NPVariant variant;
-  NPN_Evaluate(npp_gate->npp, window_object, &npstr, &variant);
+  if (!NPN_Evaluate(npp_gate->npp, window_object, &npstr, &variant)) {
+    fprintf(stderr, "\n\nNPN_Evaluate error: %d\n", strlen((char*)msg));
+    fprintf(stderr, (char*)msg);
+  }
 
   delete (char*) msg;
 }
@@ -95,6 +100,7 @@ pair<bool,int> ParseEscapeSequence(char* buffer, int length) {
 }
 
 // 27  [  4  0  ;  2  3  H 
+// returns empty string if it's not correct escape sequence
 string ParseArgs() {
   static const string default0 = "JKbglmh";
   static const string default1 = "ABCDGMLPXd@";
@@ -120,11 +126,19 @@ string ParseArgs() {
     }
   }
 
+  bool digit_expected = true;
   for (; i < es_buf.size() - 1; ++i) {
     if (es_buf[i] == ';') {
+      if (digit_expected) {
+        return "";
+      }
       os << ',';
+      digit_expected = true;
+    } else if (isdigit(es_buf[i])) {
+        os << es_buf[i];
+        digit_expected = false;
     } else {
-      os << es_buf[i];
+      return "";
     }
   }
 
@@ -132,17 +146,23 @@ string ParseArgs() {
 }
 
 void PrintSequence() {
-  ostringstream os;
-  for (unsigned i = 0; i < es_buf.size(); ++i) {
-    if (es_buf[i] >= 32) {
-      os << es_buf[i] << " ";
-    } else {
-      os << (int)es_buf[i] << " ";
-    }
-  }
-  //fprintf(stderr, "Escape sequence: %s\n", os.str().c_str());
+  fprintf(stderr, "\nUnparsed escape sequence: ");
+  PrintBuffer(&es_buf[0], es_buf.size());
 }
 
+void CheckEscSequence(ostringstream& os, const string& func_start, const string& func_end) {
+  string s;
+  if ((s = ParseArgs()) == "") {
+    //not an escape sequence
+    os << "writeToTerminal([";
+    for (unsigned i = 0; i < es_buf.size() - 1; ++i) {
+      os << (unsigned int)(unsigned char)es_buf[i] << ',';
+    }
+    os << (unsigned int)(unsigned char)es_buf[es_buf.size() - 1] << "]);";
+  } else {
+    os << func_start << s << func_end;
+  }
+}
 
 // there is only 1 seq in buf at the time!
 void EscapeSequence(ostringstream& os) {
@@ -174,31 +194,31 @@ void EscapeSequence(ostringstream& os) {
       os << "restoreCursor();";
       break;
     case 'A':
-      os << "cursorUp(" << ParseArgs() << ");";
+      CheckEscSequence(os, "cursorUp(", ");");
       break;
 
     case 'B':
-      os << "cursorDown(" << ParseArgs() << ");";
+      CheckEscSequence(os, "cursorDown(", ");");
       break;
 
     case 'C':
-      os << "cursorRight(" << ParseArgs() << ");";
+      CheckEscSequence(os, "cursorRight(",");");
       break;
 
     case 'D':
-      os << "cursorLeft(" << ParseArgs() << ");";
+      CheckEscSequence(os, "cursorLeft(", ");");
       break;
 
     case 'K':
       if (es_buf[1] == '[') {
-        os << "eraseInLine(" << ParseArgs() << ");";
+        CheckEscSequence(os, "eraseInLine(", ");");
       } else {
         //fprintf(stderr, "!!selective erase\n"); //CSI ? P s K
       }
       break;
 
     case 'P':
-      os << "deleteChar(" << ParseArgs() << ");";
+      CheckEscSequence(os, "deleteChar(", ");");
       break;
 
     case 'X':
@@ -206,41 +226,40 @@ void EscapeSequence(ostringstream& os) {
         // Start of String ( SOS is 0x98)
         //fprintf(stderr, "ESC + X\n");
       } else {
-        os << "eraseChar(" << ParseArgs() << ");";
+        CheckEscSequence(os, "eraseChar(", ");");
       }
       break;
 
     case 'H':
       if (es_buf[1] == '[') {
-        os << "setCursorPos(" << ParseArgs() << ");";
+        CheckEscSequence(os, "setCursorPos(", ");");
       } else {
         os << "tabSet();";
       }
       break;
     case 'J':
-        PrintSequence();
       if (es_buf.size() == 2) {
-        // ESC J - Erase from the cursor to the end of the screen.
+        //TODO: ESC J - Erase from the cursor to the end of the screen.
         //fprintf(stderr, "ESC J");
       } else if (es_buf[2] == '?') {
         //fprintf(stderr, "? J - selective erase");
       } else {
-        os << "eraseInDisplay(" << ParseArgs() << ");";
+        CheckEscSequence(os, "eraseInDisplay(", ");");
       }
       break;
     case 'M':
       if (es_buf[1] == '[') {
-        os << "deleteLines(" << ParseArgs() << ");";
+        CheckEscSequence(os, "deleteLines(", ");");
       } else {
         os << "scrollDown();";
       }
       break;
     case 'L':
-      os << "insertLines(" << ParseArgs() << ");";
+      CheckEscSequence(os, "insertLines(", ");");
      break;
     case 'm':
       if (es_buf[1] == '[') {
-        os << "setAttribute([" << ParseArgs() << "]);";
+        CheckEscSequence(os, "setAttribute([", "]);");
       } else {
         //fprintf(stderr, "Unparsed sequence with m %c\n", es_buf[1]);
       }
@@ -249,51 +268,33 @@ void EscapeSequence(ostringstream& os) {
       if (es_buf[1] == '%') {
         //fprintf(stderr, "ESC procent G\n");
       } else {
-        os << "setCursorCol(" << ParseArgs() << ");";
+        CheckEscSequence(os, "setCursorCol(", ");");
       }
       break;
     case 'd':
-      os << "setCursorRow(" << ParseArgs() << ");";
+      CheckEscSequence(os, "setCursorRow(", ");");
       break;
     case 'b':
-      os << "repLast(" << ParseArgs() << ");";
+      CheckEscSequence(os, "repLast(", ");");
       break;
 
     case 'g':
-      os << "tabClear(" << ParseArgs() << ");";
+      CheckEscSequence(os, "tabClear(", ");");
       break;
 
     case 'h':
       if (es_buf[2] == '?') {
-        os << "setPrivateMode([" << ParseArgs() << "]);";
-        //if (es_buf[3] == '7') {
-        //  os << "setWrapMode();";
-        //} else {
-          // TMP - print 1 char
-          //fprintf(stderr, "?l: %c\n", es_buf[3]);
-        //  PrintSequence();
-       // }
+        CheckEscSequence(os, "setPrivateMode([", "]);");
       } else {
-        os << "setMode([" << ParseArgs() << "]);";
-        //fprintf(stderr, "CSI P m h\n");
-        //PrintSequence();
+        CheckEscSequence(os, "setMode([", "]);");
       }
       break;
 
     case 'l':
       if (es_buf[2] == '?') {
-        os << "resetPrivateMode([" << ParseArgs() << "]);";
-        //if (es_buf[3] == '7') {
-        //  os << "setNoWrapMode();";
-        //} else {
-          // TMP - print 1 char
-          //fprintf(stderr, "?l: %c\n", es_buf[3]);
-          //PrintSequence();
-       // }
+        CheckEscSequence(os, "resetPrivateMode([", "]);");
       } else {
-        os << "resetMode([" << ParseArgs() << "]);";
-        //fprintf(stderr, "CSI P m l\n");
-        //PrintSequence();
+        CheckEscSequence(os, "resetMode([", "]);");
       }
 
       break;
@@ -313,7 +314,7 @@ void EscapeSequence(ostringstream& os) {
         if (es_buf[2] == '?') {
           //fprintf(stderr, "CSI ? P m r\n");
         } else {
-          os << "setScrollRegion(" << ParseArgs() << ");";
+          CheckEscSequence(os, "setScrollRegion(", ");");
         }
       } else {
          // TODO: add $
@@ -332,12 +333,15 @@ void EscapeSequence(ostringstream& os) {
       if (es_buf[1] == '%') {
         //fprintf(stderr, "ESC percent @\n");
       } else {
-        os << "insertChars(" << ParseArgs() << ");";
+        CheckEscSequence(os, "insertChars(", ");");
       }
       break;
 
     default: //detect unparsed seqs
       //fprintf(stderr, "unparsed sequence: %c\n", es_buf.back());
+      //PrintSequence();
+      // TODO: check if it's a correct sequence - otherwise print to terminal
+      //       the same for parsed and skipped sequences
       break;
   }
 
@@ -357,7 +361,6 @@ pair<bool,int> ParseUTF8(char* buffer, int length) {
     k = 3;
   } else {
     k = 4;
-    fprintf(stderr, "parseUTF8: k == 4, %02X, len == %d, buffer[0] == %02X, length == %d\n", utf8_buf[0],utf8_buf.size(), buffer[0], length); 
   }
   k -= utf8_buf.size();
 
@@ -382,7 +385,7 @@ void UTF8Decode(ostringstream& os) {
       break;
 
     case 4:
-      fprintf(stderr, "4-bytes utf8-sequences should be parsed!\n");
+      //fprintf(stderr, "4-bytes utf8-sequences should be parsed!\n");
       // TODO
       os << "0x3C0";  //TMP
       break;
@@ -504,4 +507,3 @@ void PrintToTerminal(char* buffer, int length) {
 
   CallJS(os);
 }
-

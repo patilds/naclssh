@@ -54,7 +54,7 @@ static bool SaveData(NPVariant *result, const NPVariant *args) {
   unsigned int start = NPVARIANT_TO_INT32(args[1]);
   unsigned int length = NPVARIANT_TO_INT32(args[2]);
 
-  if (length < kNaClChunkSize) {
+  if (length <= kNaClChunkSize) {
     // short message - no intermediate buf
     AddToRecvBuf(str.UTF8Characters, str.UTF8Length);
   } else {
@@ -148,7 +148,6 @@ void* StartSSHSession(void* arg) {
   // Non-blocking receive
   nacl_set_block(0);
 
-  //TODO - make constant width and length 
   char buffer[90*40];
 
   while (true) {

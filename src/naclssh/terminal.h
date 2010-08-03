@@ -15,4 +15,4 @@ std::string ParseArgs();
 void EscapeSequence(std::ostringstream& os);
 void PrintToTerminal(char* buffer, int length);
 
-#endif  // SSH_PLUGIN_HELPER_H
+#endif  // TERMINAL_H_
