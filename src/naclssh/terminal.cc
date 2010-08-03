@@ -469,8 +469,6 @@ void PrintToTerminal(char* buffer, int length) {
         EscapeSequence(os);
 	      i += result.second;
       }
-    } else if (code == 7) {  // bell
-        FinishWriteToTerm(os, state);
     } else if (code == 8) {
         FinishWriteToTerm(os, state);
         os << "backSpace();";
@@ -482,6 +480,16 @@ void PrintToTerminal(char* buffer, int length) {
         os << "carriageReturn();";
     } else {
         if (code < 192) {
+          // unprintable char
+          if (code < 32 && code != 10) {
+            // Vertical tab and Form feed are equal to Line feed
+            if (code == 11 || code == 12) {
+              code = 10;
+            } else {
+              code = 0;
+            }
+          }
+
           // usual char
           WriteToTerm(os, state);
           os << code;

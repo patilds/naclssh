@@ -666,8 +666,10 @@ function scrollDown() {
 // data - array
 function writeToTerminal(data) {
   for (var i = 0; i < data.length; i++) {
-    var c = String.fromCharCode(checkCharSet(data[i]));
-    writeCharToTerminal(c);
+    if (data[i]) {
+      var c = String.fromCharCode(checkCharSet(data[i]));
+      writeCharToTerminal(c);
+    }
   }
 }
 
