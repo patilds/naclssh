@@ -1097,3 +1097,39 @@ function clearAllTabs() {
   }
   tabActive = false;
 }
+
+
+function copyArray(src) {
+  var dest = new Array(src.length);
+  for (var i = 0; i < src.length; ++i) {
+    dest[i] = src[i];
+  }
+  return dest;
+}
+
+function copyMatrix(src) {
+  var dest = new Array(src.length);
+  for (var i = 0; i < src.length; ++i) {
+    dest[i] = copyArray(src[i]);
+  }
+  return dest;
+}
+
+// For tests
+function makeSnapshot() {
+  var snapshot = new Object();
+  snapshot.screenBuffer = new Object();
+
+  snapshot.screenBuffer.chars = copyMatrix(activeScreenBuf.chars);
+  snapshot.screenBuffer.colors = copyMatrix(activeScreenBuf.colors);
+  snapshot.screenBuffer.bgrColors = copyMatrix(activeScreenBuf.bgrColors);
+
+  snapshot.screenBuffer.tabs = copyArray(activeScreenBuf.tabs);
+
+  snapshot.cursorPos = new Object();
+  snapshot.cursorPos.col = cursorPos.col;
+  snapshot.cursorPos.row = cursorPos.row;
+
+  return snapshot;
+}
+
