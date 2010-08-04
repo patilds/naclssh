@@ -1,0 +1,29 @@
+Let's $NACL_SSH_ROOT is the directory where this file lives.
+
+1. Add yourself to CONTRIBUTORS file.
+
+2. Edit $NACL_SSH_ROOT/.hg/hgrc to add:
+
+[extensions]
+codereview = NACL_SSH_ROOT/lib/codereview/codereview.py
+
+[ui]
+username = Your Name <you@server.dom>
+
+
+Replace NACL_SSH_ROOT with the actual path.
+
+3. Log in:
+
+$ hg code-login
+Email (login for uploading to codereview.appspot.com): imkrasin@gmail.com
+Password for imkrasin@gmail.com:
+
+Saving authentication cookies to /home/krasin/naclssh/.codereview_upload_cookies_codereview.appspot.com
+
+After all you can:
+
+hg change to create CL
+hg upload <CL_NUMBER> to upload CL to codereview.appspot.com
+hg submit <CL_NUMBER> to submit CL
+
