@@ -30,8 +30,7 @@ LDFLAGS = -lgoogle_nacl_imc \
           $(ARCH_FLAGS)
 OPT_FLAGS = -O2
 
-all: check_variables ssh_plugin_x86_32.nexe 
-#ssh_plugin_x86_64.nexe
+all: check_variables ssh_plugin_x86_32.nexe ssh_plugin_x86_64.nexe
 
 # common.mk has rules to build .o files from .cc files.
 -include common.mk

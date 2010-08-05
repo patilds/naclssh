@@ -39,7 +39,8 @@ function start() {
     var contentDiv = document.getElementById('nacl_ssh_plugin_content');
     loadNaClSSHClient(contentDiv,
                       'ssh_plugin',
-                      'x86-32: ssh_plugin_x86_32.nexe?rnd=' + Math.random());
+                      'x86-32: ssh_plugin_x86_32.nexe?rnd=' + Math.random() + '\nx86-64: ssh_plugin_x86_64.nexe?rnd=' + Math.random());
+
   </script>
   <div id = 'parametersDiv'>
 Host:port: <input id=hostname type=text value=""> &nbsp;&nbsp;&nbsp; User:
