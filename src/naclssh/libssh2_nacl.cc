@@ -10,7 +10,7 @@ extern "C" {
 #include "libssh2_nacl.h"
 }
 
-#include "terminal.h"
+#include "js_utilities.h"
 
 
 using std::ostringstream;

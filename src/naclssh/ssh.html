@@ -2,7 +2,10 @@
 <head>
   <title>Native Client SSH Client demo</title>
   <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Droid+Sans+Mono">
+  <script type="text/javascript" src="ssh.js"> </script>
   <script type="text/javascript" src="main.js"> </script>
+  <script type="text/javascript" src="terminal.js"> </script>
+  <script type="text/javascript" src="parser.js"> </script>
   <script type="text/javascript" src="web2socket.js"></script>
 
   <style type="text/css">
@@ -27,7 +30,8 @@ function start() {
   }
   var user = document.getElementById('username').value;
   var pwd = document.getElementById('pwd').value;
-  startSSH(proxyURI, host, user, pwd);
+  initTerminal();
+  loadData(proxyURI, host, user, pwd);
 }
 </script>
 

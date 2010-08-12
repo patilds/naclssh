@@ -8,7 +8,7 @@
 
 .PHONY: all clean
 
-CCFILES = ssh_plugin_module.cc ssh_plugin.cc  npp_gate.cc libssh2_nacl.cc terminal.cc
+CCFILES = ssh_plugin_module.cc ssh_plugin.cc  npp_gate.cc libssh2_nacl.cc terminal.cc js_utilities.cc
 #npn_bridge.cc - only for dubugging
 
 OBJECTS_X86_32 = $(CCFILES:%.cc=%_x86_32.o)

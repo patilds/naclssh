@@ -8,7 +8,6 @@
 #include <nacl/nacl_npapi.h>
 
 #include "pthread.h"
-#include "npp_gate.h"
 
 #include "openssl/rand.h"
 #include <libssh2.h>
@@ -29,8 +28,6 @@ using std::vector;
 extern queue<char> recv_buf;
 extern queue<unsigned char> term_buf;
 
-extern struct NppGate *npp_gate;
-
 // These are the method names as JavaScript sees them.
 static const char* kSaveDataMethodId = "savedata";
 static const char* kSSHConnectMethodId = "sshconnect";
@@ -46,6 +43,20 @@ pthread_t libssh_thread;
 unsigned char random_datasource[] = "La1fk&E8nsjoQ3k!sTg69#d2hoqhz)90yagE3t5d(fSLiygWhaTq4gf-kQu51sHg";
 
 const unsigned int kNaClChunkSize = 60 * 1024;
+
+void AddToRecvBuf(const char* msg, unsigned int length) {
+  char* data;
+  unsigned int datalen;
+  base64_to_binary_data(&data, &datalen, msg, length);
+
+  pthread_mutex_lock (&mutexbuf);
+  for (unsigned int i = 0; i < datalen; ++i) {
+    recv_buf.push(data[i]);
+  }
+
+  pthread_cond_signal(&mutexbuf_cvar);
+  pthread_mutex_unlock (&mutexbuf);
+}
 
 static bool SaveData(NPVariant *result, const NPVariant *args) {
   static vector<char> interm_recv_buf;
@@ -148,7 +159,7 @@ void* StartSSHSession(void* arg) {
   // Non-blocking receive
   nacl_set_block(0);
 
-  char buffer[90*40];
+  char buffer[1024 * 30];
 
   while (true) {
     if (nacl_wait_for_sock()) {

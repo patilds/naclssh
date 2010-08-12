@@ -2,7 +2,10 @@
 <head> 
 	<title>gloomy term</title> 
  
+<script type="text/javascript" src="ssh.js"> </script>
 <script type="text/javascript" src="main.js"> </script>
+<script type="text/javascript" src="terminal.js"> </script>
+<script type="text/javascript" src="parser.js"> </script>
 
 <style type="text/css">
 tr {
@@ -23,7 +26,8 @@ function start() {
   var host = document.getElementById('hostname').value;
   var user = document.getElementById('username').value;
   var pwd = document.getElementById('pwd').value;
-  startSSH(proxyURI, host, user, pwd);
+  initTerminal();
+  loadData(proxyURI, host, user, pwd);
 }
 </script>
 </head>
