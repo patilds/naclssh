@@ -9,6 +9,8 @@ using std::ostringstream;
 
 extern struct NppGate *npp_gate;
 
+
+// Calls NPN_Evaluate to evaluate a script in msg
 void AsyncSend(void* msg) {
   NPString npstr;
   npstr.UTF8Characters = (char*)msg;
@@ -26,6 +28,10 @@ void AsyncSend(void* msg) {
   delete (char*) msg;
 }
 
+
+// Calls javascript functions from the thread in which libssh works,
+// this can be done only by passing this call to the thread which works
+// in browser with NPN_PluginThreadAsyncCall
 void CallJS(const ostringstream& os) {
   char* msg = new char[os.str().length() + 1];
   strncpy(msg, os.str().c_str(), os.str().length() + 1);

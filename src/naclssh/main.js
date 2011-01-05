@@ -32,46 +32,46 @@ function keyDownHandler(key) {
 
   else {
     switch (key) {
-      case 32:	// space
+      case 32:  // space
         sendKey(32);
         break;
       case 27:
         sendKey(27); //esc
       break;
-      case 8:	// backspace
+      case 8: // backspace
         sendKey(127);
         break;
-      case 9:	// tab
+      case 9: // tab
         sendKey(9);
         break;
-      case 13:	// enter
+      case 13:  // enter
         sendKey(10); // line feed
         break;
-      case 33:	// pg up
+      case 33:  // pg up
         sendEscSeq('[5~');
         break;
-      case 34:	// pg down
+      case 34:  // pg down
         sendEscSeq('[6~');
         break;
-      case 35:	// end
+      case 35:  // end
         sendEscSeq('OF');
         break;
-      case 36:	// home
+      case 36:  // home
         sendEscSeq('OH');
         break;
-      case 37:	// left
+      case 37:  // left
         sendEscSeq('OD');
         break;
-      case 38:	// up
+      case 38:  // up
         sendEscSeq('OA');
         break;
-      case 39:	// right
+      case 39:  // right
         sendEscSeq('OC');
         break;
-      case 40:	// down
+      case 40:  // down
         sendEscSeq('OB');
         break;
-      case 46:	// del
+      case 46:  // del
         sendEscSeq('[3~');
         break;
 
@@ -123,7 +123,7 @@ function keyDownHandler(key) {
         sendEscSeq('[24~');
         break;
 
-      default:	// printable character - don't have to stop event
+      default:  // printable character - don't have to stop event
         return;
     }
 

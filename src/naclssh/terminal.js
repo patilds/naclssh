@@ -92,7 +92,7 @@ function setCharSet(c) {
 function setAttribute(data) {
   for (var i = 0; i < data.length; ++i) {
     switch(data[i]) {
-      case 0:	// all attributes are off
+      case 0: // all attributes are off
         activeColor = DEFAULT_COLOR;
         bgrColor = DEFAULT_BGRCOLOR;
         reverseVideoOn = false;
@@ -128,17 +128,17 @@ function setAttribute(data) {
         activeColor = 'white';
         break;
       case 39:
-	      activeColor = DEFAULT_COLOR;
-	      break;
+        activeColor = DEFAULT_COLOR;
+        break;
       case 40:
-	      bgrColor = 'black';
+        bgrColor = 'black';
         break;
       case 41:
-	      bgrColor = 'red';
+        bgrColor = 'red';
         break;
       case 42:
         bgrColor = 'green';
-	      break;
+        break;
       case 43:
         bgrColor = 'yellow';
         break;
@@ -555,7 +555,8 @@ function terminalUpdate() {
 
   for (var i = 0; i < rows.length; ++i) {
     charsCopy[i] = new Array(maxcol);
-    charsCopy[i][0] = '<span style="color:' + activeScreenBuf.colors[i][0] + ';background-color:'+ activeScreenBuf.bgrColors[i][0] + '">' + activeScreenBuf.chars[i][0];
+    charsCopy[i][0] = '<span style="color:' + activeScreenBuf.colors[i][0] + ';background-color:'+
+        activeScreenBuf.bgrColors[i][0] + '">' + activeScreenBuf.chars[i][0];
 
     var prevColor = activeScreenBuf.colors[i][0];
     var prevBColor = activeScreenBuf.bgrColors[i][0];
@@ -567,11 +568,12 @@ function terminalUpdate() {
           // close span, start the new one if not default color
           charsCopy[i][j] = '</span>';
 
-	  if (activeScreenBuf.colors[i][j] == DEFAULT_COLOR && activeScreenBuf.bgrColors[i][j] == DEFAULT_BGRCOLOR) {
+    if (activeScreenBuf.colors[i][j] == DEFAULT_COLOR && activeScreenBuf.bgrColors[i][j] == DEFAULT_BGRCOLOR) {
             // no new span is needed
-	    charsCopy[i][j] += activeScreenBuf.chars[i][j];
+      charsCopy[i][j] += activeScreenBuf.chars[i][j];
           } else {
-            charsCopy[i][j] += '<span style="color:' + activeScreenBuf.colors[i][j] + ';background-color:'+ activeScreenBuf.bgrColors[i][j] + '">' + activeScreenBuf.chars[i][j];
+            charsCopy[i][j] += '<span style="color:' + activeScreenBuf.colors[i][j] + ';background-color:'+
+                activeScreenBuf.bgrColors[i][j] + '">' + activeScreenBuf.chars[i][j];
           }
           prevColor = activeScreenBuf.colors[i][j];
           prevBColor = activeScreenBuf.bgrColors[i][j];
@@ -619,10 +621,10 @@ function initLineGraphicsMap() {
   lineGraphicsMap[103] = 0xB1;    // plus/minus 
   lineGraphicsMap[104] = 0x2424;  // board of squares
   lineGraphicsMap[105] = 0x240B;  // lantern symbol
-  lineGraphicsMap[106] = 0x2518;	// lower right corner
+  lineGraphicsMap[106] = 0x2518;  // lower right corner
   lineGraphicsMap[107] = 0x2510;  // upper right corner
-  lineGraphicsMap[108] = 0x250C;	// upper left corner
-  lineGraphicsMap[109] = 0x2514;	// lower left corner
+  lineGraphicsMap[108] = 0x250C;  // upper left corner
+  lineGraphicsMap[109] = 0x2514;  // lower left corner
   lineGraphicsMap[110] = 0x253C;  // large plus or crossover
   lineGraphicsMap[111] = 0x23BA;  // scan line 1 
   lineGraphicsMap[112] = 0x23BB;  // scan line 3 

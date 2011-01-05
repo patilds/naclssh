@@ -25,6 +25,7 @@ using std::queue;
 using std::string;
 using std::vector;
 
+// Defined in libssh2_nacl.cc
 extern queue<char> recv_buf;
 extern queue<unsigned char> term_buf;
 
@@ -34,16 +35,30 @@ static const char* kSSHConnectMethodId = "sshconnect";
 static const char* kSendEscapeSequence = "sendEscapeSequence";
 static const char* kSendUnicodeKey = "sendUnicodeKey";
 
-//TODO: add destroying pthread objs
+// Used to synchronize access to recv_buf and term_buf
 pthread_mutex_t mutexbuf = PTHREAD_MUTEX_INITIALIZER;
+
+// Used to synchronize access to recv_buf and term_buf and
+// to model waiting for action on socket (select/poll):
+// when there is some data to be read or sent, this conditinal variable is signalled
 pthread_cond_t mutexbuf_cvar = PTHREAD_COND_INITIALIZER;
+
+// Libssh uses blocking operations. To make plugin able to work in interactive mode
+// the separate thread for libssh is necessary
 pthread_t libssh_thread;
 
-//TODO: what to do with DEVRANDOM?! : tmp commented in libcrypto
+// TODO: when DEVRANDOM is implemented, remove this temporary hack
+//    and uncomment DEVRANDOM in libcrypto
 unsigned char random_datasource[] = "La1fk&E8nsjoQ3k!sTg69#d2hoqhz)90yagE3t5d(fSLiygWhaTq4gf-kQu51sHg";
 
+// Browser and NaCl plugin cannot exchange messages of an arbitrary size,
+// so data has to be split into chunks
 const unsigned int kNaClChunkSize = 60 * 1024;
 
+
+// Decodes data from base64 to binary and puts it into recv_buf,
+// signals conditional variable that there is some data to be read,
+// called from SaveData
 void AddToRecvBuf(const char* msg, unsigned int length) {
   char* data;
   unsigned int datalen;
@@ -58,6 +73,10 @@ void AddToRecvBuf(const char* msg, unsigned int length) {
   pthread_mutex_unlock (&mutexbuf);
 }
 
+
+// Reads data which came from server and saves it to recv_buf.
+// If the message is large - reads its chunks into intermediate buffer first.
+// (reaction to ws.onmessage in javascript)
 static bool SaveData(NPVariant *result, const NPVariant *args) {
   static vector<char> interm_recv_buf;
 
@@ -69,6 +88,8 @@ static bool SaveData(NPVariant *result, const NPVariant *args) {
     // short message - no intermediate buf
     AddToRecvBuf(str.UTF8Characters, str.UTF8Length);
   } else {
+    // message consists of several chunks
+
     if (!start) {
       // first message chunk
       interm_recv_buf.resize(length);
@@ -89,114 +110,116 @@ static bool SaveData(NPVariant *result, const NPVariant *args) {
   return true;
 }
 
+
 struct UserData {
   string username;
   string password;
 };
 
+
+// Creates ssh session instance and runs main data reading/writing loop,
+// called from SSHConnect
 void* StartSSHSession(void* arg) {
   UserData* userdata = static_cast<UserData*>(arg);
 
   LIBSSH2_SESSION *session;
   LIBSSH2_CHANNEL *channel;
 
-  int rc = libssh2_init (0);
+  int rc = libssh2_init(0);
   if (rc != 0) {
     fprintf (stderr, "libssh2 initialization failed (%d)\n", rc);
-	  return NULL;
+    return NULL;
   }
 
   // TODO: different socket numbers
   int sock = 1;
-
-  /* Create a session instance and start it up. This will trade welcome
-   * banners, exchange keys, and setup crypto, compression, and MAC layers
-   */
-  
-  // tmp
+ 
+  // Temporary hack till DEVRANDOM is not implemented
   if (RAND_status() == 0) {
     RAND_seed(random_datasource, sizeof(random_datasource));
   }
 
+  // Create a session instance and start it up. This will trade welcome
+  // banners, exchange keys, and setup crypto, compression, and MAC layers 
   session = libssh2_session_init();
     
+  // Debug
   // libssh2_trace(session, 0xffffffff);
+
   libssh2_session_set_blocking(session, 0);
 
   if (libssh2_session_startup(session, sock)) {
     fprintf(stderr, "Failure establishing SSH session\n");
-	  return NULL;
+    return NULL;
   }
-
 
   // TODO: add unknown host adding dialog
   // const char* fingerprint = libssh2_hostkey_hash(session, LIBSSH2_HOSTKEY_HASH_SHA1);
 
   // Password authentication
   if (libssh2_userauth_password(session, userdata->username.c_str(), userdata->password.c_str())) {
-    //fprintf(stderr, "\tAuthentication by password failed!\n");
+    fprintf(stderr, "Authentication by password failed!\n");
     goto shutdown;
   }
 
-  /* Request a shell */
+  // Request a shell
   if (!(channel = libssh2_channel_open_session(session))) {
-    //fprintf(stderr, "Unable to open a session\n");
+    fprintf(stderr, "Unable to open a session\n");
     goto shutdown;
   }
 
   // Request xterm terminal
   if (libssh2_channel_request_pty_ex(channel, "xterm", strlen("xterm"), NULL, 0, 90, 40, 0, 0)) {
-    //fprintf(stderr, "Failed requesting pty\n");
+    fprintf(stderr, "Failed requesting pty\n");
     goto skip_shell;
   }
 
-  /* Open a SHELL on that pty */
+  // Open a SHELL on that pty
   if (libssh2_channel_shell(channel)) {
-    //fprintf(stderr, "Unable to request shell on allocated pty\n");
+    fprintf(stderr, "Unable to request shell on allocated pty\n");
     goto shutdown;
   }
 
-  // Non-blocking receive
+  // Set non-blocking receive mode
   nacl_set_block(0);
 
+  // buffer size = 1/2 * kNaClChunkSize
   char buffer[1024 * 30];
 
+  // Main loop
   while (true) {
     if (nacl_wait_for_sock()) {
       pthread_mutex_lock (&mutexbuf);
 
-	    if (!term_buf.empty()) {
-  	    unsigned i = 0;
+      if (!term_buf.empty()) {
+        unsigned i = 0;
 
         //TODO: read buffer to the end
-	      for (; i < sizeof(buffer); ++i) {
-	        if (term_buf.empty()) {
-	          break;
+        for (; i < sizeof(buffer); ++i) {
+          if (term_buf.empty()) {
+            break;
           }
-	        buffer[i] = term_buf.front();
-	        term_buf.pop();
-	      }
+          buffer[i] = term_buf.front();
+          term_buf.pop();
+        }
 
- 	      pthread_mutex_unlock (&mutexbuf);
-
-	      libssh2_channel_write(channel, buffer, i);
-
-	    } else {
         pthread_mutex_unlock (&mutexbuf);
-	    }
+        libssh2_channel_write(channel, buffer, i);
+      } else {
+        pthread_mutex_unlock (&mutexbuf);
+      }
 
- 	    pthread_mutex_lock (&mutexbuf);
+      pthread_mutex_lock (&mutexbuf);
 
       if (!recv_buf.empty()) {
         pthread_mutex_unlock (&mutexbuf);
-
         int len;
         while((len = libssh2_channel_read(channel, buffer,sizeof(buffer))) > 0) {
-	        PrintToTerminal(buffer, len);
-	      }
-	    } else {
- 	      pthread_mutex_unlock (&mutexbuf);
-	    }
+          PrintToTerminal(buffer, len);
+        }
+      } else {
+        pthread_mutex_unlock (&mutexbuf);
+      }
     }
   }
 
@@ -217,6 +240,8 @@ shutdown:
   return NULL;
 }
 
+// Creates new thread in which libssh works,
+// called from javascript (sshconnect - reaction to opening a websocket)
 static bool SSHConnect(NPVariant* result, const NPVariant *args) {
   UserData* userdata = new UserData();
 
@@ -238,9 +263,14 @@ static bool SSHConnect(NPVariant* result, const NPVariant *args) {
 }
 
 
+// Saves what user typed into term_buf, signals conditinal variable
+// that there is some data to be sent to server,
+// called as a reaction to typing printable character in terminal - 
+//    keyPress in javascript (sendKey in ssh.js, main.js)
 static bool SendUnicodeKey(NPVariant* result, const NPVariant* args) {
   unsigned int code = args[0].value.intValue;
 
+  // Debug
   // fprintf(stderr, "code: %u\n", code);
   
   pthread_mutex_lock (&mutexbuf);
@@ -267,6 +297,11 @@ static bool SendUnicodeKey(NPVariant* result, const NPVariant* args) {
   return true;
 }
 
+
+// Saves what user typed into term_buf, signals conditinal variable
+// that there is some data to be sent to server,
+// called as a reaction to pressing special keys - 
+//    keyDown in javascript (sendEscSeq in ssh.js, main.js)
 static bool SendEscapeSequence(NPVariant *result, const NPVariant *args) {
   NPString str = NPVARIANT_TO_STRING(args[0]);
 
@@ -287,7 +322,7 @@ static bool SendEscapeSequence(NPVariant *result, const NPVariant *args) {
   }
 
   return true;
-} 
+}
 
 
 static NPObject* Allocate(NPP npp, NPClass* npclass) {
@@ -298,7 +333,8 @@ static void Deallocate(NPObject* object) {
   delete object;
 }
 
-// Return |true| if |method_name| is a recognized method.
+
+// Returns |true| if |method_name| is a recognized method.
 static bool HasMethod(NPObject* obj, NPIdentifier method_name) {
   char *name = NPN_UTF8FromIdentifier(method_name);
   bool is_method = false;
@@ -315,6 +351,7 @@ static bool HasMethod(NPObject* obj, NPIdentifier method_name) {
   return is_method;
 }
 
+
 static bool InvokeDefault(NPObject *obj, const NPVariant *args,
                           uint32_t argCount, NPVariant *result) {
   if (result) {
@@ -322,6 +359,7 @@ static bool InvokeDefault(NPObject *obj, const NPVariant *args,
   }
   return true;
 }
+
 
 // Invoke() is called by the browser to invoke a function object whose name
 // is |method_name|.

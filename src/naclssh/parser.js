@@ -398,7 +398,7 @@ function printToTerminal(buffer) {
     // finish escape sequence parsing
     result = parseEscapeSequence(buffer, 0);
     if (!result.isfinished) {
-      return;	// sequence not finished
+      return; // sequence not finished
     }
     escapeSequence();
     i = result.index + 1;
@@ -408,7 +408,7 @@ function printToTerminal(buffer) {
     // finish utf8 multibyte sequence
     result = parseUTF8(buffer, 0);
     if (!result.isfinished) {
-      return;	// sequence not finished
+      return; // sequence not finished
     }
     decodeUTF8();
     i = result.index + 1;
@@ -425,7 +425,7 @@ function printToTerminal(buffer) {
         break;
       } else {
         decodeUTF8();
-	      i = result.index;
+        i = result.index;
       }
     } else if (code < 128) {
         if (code == 27) {
@@ -436,7 +436,7 @@ function printToTerminal(buffer) {
             break;
           } else {
             escapeSequence();
-	          i = result.index;
+            i = result.index;
           }
         } else if (code == 8) {
           backSpace();

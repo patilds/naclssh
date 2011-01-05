@@ -4,6 +4,7 @@
 #include "js_utilities.h"
 #include "terminal.h"
 
+// Calls javascript to display data from buffer on the terminal
 void PrintToTerminal(char* buffer, int length) {
   std::ostringstream os;
 
