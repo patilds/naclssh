@@ -23,7 +23,7 @@ using std::queue;
 //    is called from _libssh2_recv
 queue<char> recv_buf;
 
-// Data which came from terminal (what user typed): to be send to server,
+// Data which came from terminal (what user typed): to be sent to server,
 // data is put into term_buf when SendUnicodeKey or SendEscapeSequence
 //    is called (as a reaction to keyPress in javascript)
 // data is read from term_buf in StartSSHSession main loop 
